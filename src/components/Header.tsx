@@ -2,21 +2,23 @@
 
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { Menu, Home, User, Settings, Info, X } from "lucide-react"
+import { Menu, Home, User, Settings, Info, Mail } from "lucide-react"
+import Link from 'next/link'
 
 export default function Header() {
   const navItems = [
     { name: 'Home', href: '/', icon: Home },
     { name: 'Profile', href: '/profile', icon: User },
     { name: 'Settings', href: '/settings', icon: Settings },
-    { name: 'About', href: '/about', icon: Info }
+    { name: 'About', href: '/about', icon: Info },
+    { name: 'Contact', href: '/contact', icon: Mail }
   ]
   
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b px-4 py-3">
+    <header className="sticky top-0 z-50 bg-background border-b px-4 py-3">
       <div className="max-w-6xl mx-auto flex items-center">
         
-        {/* Mobile Hamburger - Bigger */}
+        {/* Mobile Hamburger */}
         <Sheet>
           <SheetTrigger asChild>
             <Button 
@@ -38,14 +40,14 @@ export default function Header() {
               {navItems.map((item) => {
                 const Icon = item.icon
                 return (
-                  <a
+                  <Link
                     key={item.name}
                     href={item.href}
                     className="flex items-center gap-4 rounded-lg px-4 py-4 text-lg font-medium text-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
                   >
                     <Icon className="h-6 w-6" />
                     {item.name}
-                  </a>
+                  </Link>
                 )
               })}
             </nav>
@@ -60,7 +62,7 @@ export default function Header() {
           </SheetContent>
         </Sheet>
 
-        {/* Desktop Navigation - Improved */}
+        {/* Desktop Navigation */}
         <nav className="hidden lg:flex gap-1 mr-6">
           {navItems.map((item) => {
             const Icon = item.icon
@@ -71,16 +73,16 @@ export default function Header() {
                 asChild 
                 className="gap-2 font-medium"
               >
-                <a href={item.href}>
+                <Link href={item.href}>
                   <Icon className="h-4 w-4" />
                   {item.name}
-                </a>
+                </Link>
               </Button>
             )
           })}
         </nav>
 
-        {/* App Title - Right aligned */}
+        {/* App Title */}
         <div className="flex-1 text-right">
           <h1 className="text-2xl lg:text-xl font-bold">My App</h1>
         </div>
