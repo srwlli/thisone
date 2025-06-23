@@ -6,9 +6,56 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useFormState, CommonValidators } from '@/lib/form-utils'
+import { ErrorDisplay, FieldError } from '@/components/ui/error-display'
+import { ContactForm, AppError } from '@/lib/types'
 
 export default function ContactPage() {
   const [isMounted, setIsMounted] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [submitError, setSubmitError] = useState<AppError | null>(null)
+  
+  const contactForm = useFormState<ContactForm>(
+    { name: '', email: '', subject: '', message: '' },
+    {
+      name: CommonValidators.required('Name'),
+      email: CommonValidators.email,
+      subject: CommonValidators.required('Subject'),
+      message: CommonValidators.required('Message')
+    }
+  )
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setSubmitError(null)
+    
+    if (!contactForm.validateAll()) {
+      return
+    }
+    
+    contactForm.setSubmitting(true)
+    setSubmitStatus('idle')
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // In a real app, you would send the form data to your API
+      console.log('Contact form submitted:', contactForm.data)
+      
+      setSubmitStatus('success')
+      contactForm.reset()
+    } catch (error: any) {
+      setSubmitStatus('error')
+      setSubmitError({
+        code: 'FORM_SUBMISSION_ERROR',
+        message: 'Failed to send message. Please try again.',
+        timestamp: new Date().toISOString()
+      })
+    } finally {
+      contactForm.setSubmitting(false)
+    }
+  }
 
   useEffect(() => {
     setIsMounted(true)
@@ -38,37 +85,72 @@ export default function ContactPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Status Messages */}
+            {submitStatus === 'success' && (
+              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                <p className="text-green-800 font-medium">Message sent successfully!</p>
+                <p className="text-green-600 text-sm">We'll get back to you within 24 hours.</p>
+              </div>
+            )}
+            {submitError && (
+              <ErrorDisplay error={submitError} className="mb-4" />
+            )}
+            
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="first-name">First name</Label>
-                <Input id="first-name" placeholder="John" />
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  placeholder="John Doe"
+                  value={contactForm.data.name}
+                  onChange={(e) => contactForm.updateField('name', e.target.value)}
+                  disabled={contactForm.isSubmitting}
+                />
+                <FieldError error={contactForm.errors.name} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="last-name">Last name</Label>
-                <Input id="last-name" placeholder="Doe" />
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  placeholder="john@example.com"
+                  value={contactForm.data.email}
+                  onChange={(e) => contactForm.updateField('email', e.target.value)}
+                  disabled={contactForm.isSubmitting}
+                />
+                <FieldError error={contactForm.errors.email} />
               </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="john@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="company">Company (optional)</Label>
-              <Input id="company" placeholder="Your Company" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="subject">Subject</Label>
-              <Input id="subject" placeholder="How can we help you?" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="message">Message</Label>
-              <textarea
-                id="message"
-                className="w-full min-h-32 border border-input rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
-                placeholder="Tell us about your project or question..."
-              />
-            </div>
-            <Button className="w-full">Send Message</Button>
+              <div className="space-y-2">
+                <Label htmlFor="subject">Subject</Label>
+                <Input 
+                  id="subject" 
+                  placeholder="How can we help you?"
+                  value={contactForm.data.subject}
+                  onChange={(e) => contactForm.updateField('subject', e.target.value)}
+                  disabled={contactForm.isSubmitting}
+                />
+                <FieldError error={contactForm.errors.subject} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="message">Message</Label>
+                <textarea
+                  id="message"
+                  className="w-full min-h-32 border border-input rounded-md px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                  placeholder="Tell us about your project or question..."
+                  value={contactForm.data.message}
+                  onChange={(e) => contactForm.updateField('message', e.target.value)}
+                  disabled={contactForm.isSubmitting}
+                />
+                <FieldError error={contactForm.errors.message} />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={contactForm.isSubmitting || !contactForm.isValid}
+              >
+                {contactForm.isSubmitting ? 'Sending...' : 'Send Message'}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 

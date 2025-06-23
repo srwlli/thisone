@@ -9,16 +9,35 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { supabase } from '@/lib/supabase'
+import { useFormState, CommonValidators } from '@/lib/form-utils'
+import { parseSupabaseError } from '@/lib/errors'
+import { ErrorDisplay, FieldError } from '@/components/ui/error-display'
+import { LoginForm, SignupForm, AppError } from '@/lib/types'
 
 export default function AuthPage() {
-  const [isLoading, setIsLoading] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
+  const [globalError, setGlobalError] = useState<AppError | null>(null)
   const router = useRouter()
+  
+  // Login form state
+  const loginForm = useFormState<LoginForm>(
+    { email: '', password: '' },
+    {
+      email: CommonValidators.email,
+      password: CommonValidators.password
+    }
+  )
+  
+  // Signup form state
+  const signupForm = useFormState<SignupForm>(
+    { email: '', password: '', confirmPassword: '', firstName: '', lastName: '' },
+    {
+      email: CommonValidators.email,
+      password: CommonValidators.password,
+      firstName: CommonValidators.required('First name'),
+      lastName: CommonValidators.required('Last name')
+    }
+  )
 
   useEffect(() => {
     setIsMounted(true)
@@ -30,7 +49,9 @@ export default function AuthPage() {
 
   // Google OAuth
   const handleGoogleAuth = async () => {
-    setIsLoading(true)
+    setGlobalError(null)
+    loginForm.setSubmitting(true)
+    
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -40,15 +61,17 @@ export default function AuthPage() {
       })
       if (error) throw error
     } catch (error: any) {
-      alert(error.message)
+      setGlobalError(parseSupabaseError(error))
     } finally {
-      setIsLoading(false)
+      loginForm.setSubmitting(false)
     }
   }
 
   // Apple OAuth (Note: Apple needs special setup in Supabase dashboard)
   const handleAppleAuth = async () => {
-    setIsLoading(true)
+    setGlobalError(null)
+    loginForm.setSubmitting(true)
+    
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'apple',
@@ -58,21 +81,27 @@ export default function AuthPage() {
       })
       if (error) throw error
     } catch (error: any) {
-      alert(error.message)
+      setGlobalError(parseSupabaseError(error))
     } finally {
-      setIsLoading(false)
+      loginForm.setSubmitting(false)
     }
   }
 
   // Email Login
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
+    setGlobalError(null)
+    
+    if (!loginForm.validateAll()) {
+      return
+    }
+    
+    loginForm.setSubmitting(true)
     
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: loginForm.data.email,
+        password: loginForm.data.password,
       })
       
       if (error) throw error
@@ -80,43 +109,51 @@ export default function AuthPage() {
       // Redirect to home page on success
       router.push('/')
     } catch (error: any) {
-      alert(error.message)
+      setGlobalError(parseSupabaseError(error))
     } finally {
-      setIsLoading(false)
+      loginForm.setSubmitting(false)
     }
   }
 
   // Email Signup
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
+    setGlobalError(null)
     
-    if (password !== confirmPassword) {
-      alert('Passwords do not match')
+    // Validate password match
+    if (signupForm.data.password !== signupForm.data.confirmPassword) {
+      signupForm.setError('confirmPassword', 'Passwords do not match')
       return
     }
     
-    setIsLoading(true)
+    if (!signupForm.validateAll()) {
+      return
+    }
+    
+    signupForm.setSubmitting(true)
     
     try {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: signupForm.data.email,
+        password: signupForm.data.password,
         options: {
           data: {
-            first_name: firstName,
-            last_name: lastName,
-            full_name: `${firstName} ${lastName}`.trim()
+            first_name: signupForm.data.firstName,
+            last_name: signupForm.data.lastName,
+            full_name: `${signupForm.data.firstName} ${signupForm.data.lastName}`.trim()
           }
         }
       })
       
       if (error) throw error
       
-      alert('Check your email for verification link!')
+      // Show success message instead of alert
+      setGlobalError(null)
+      // TODO: Show success toast or redirect to email verification page
     } catch (error: any) {
-      alert(error.message)
+      setGlobalError(parseSupabaseError(error))
     } finally {
-      setIsLoading(false)
+      signupForm.setSubmitting(false)
     }
   }
 
@@ -138,6 +175,10 @@ export default function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Global Error Display */}
+                {globalError && (
+                  <ErrorDisplay error={globalError} className="mb-4" />
+                )}
                 {/* Social Login Cards */}
                 <div className="grid grid-cols-2 gap-3">
                   <Card 
@@ -188,25 +229,25 @@ export default function AuthPage() {
                       id="email"
                       placeholder="name@example.com"
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      value={loginForm.data.email}
+                      onChange={(e) => loginForm.updateField('email', e.target.value)}
+                      disabled={loginForm.isSubmitting}
                     />
+                    <FieldError error={loginForm.errors.email} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="password">Password</Label>
                     <Input 
                       id="password" 
                       type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      value={loginForm.data.password}
+                      onChange={(e) => loginForm.updateField('password', e.target.value)}
+                      disabled={loginForm.isSubmitting}
                     />
+                    <FieldError error={loginForm.errors.password} />
                   </div>
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? 'Signing in...' : 'Sign In'}
+                  <Button className="w-full" type="submit" disabled={loginForm.isSubmitting || !loginForm.isValid}>
+                    {loginForm.isSubmitting ? 'Signing in...' : 'Sign In'}
                   </Button>
                 </form>
                 
@@ -228,6 +269,10 @@ export default function AuthPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                {/* Global Error Display */}
+                {globalError && (
+                  <ErrorDisplay error={globalError} className="mb-4" />
+                )}
                 {/* Social Login Cards */}
                 <div className="grid grid-cols-2 gap-3">
                   <Card 
@@ -278,22 +323,22 @@ export default function AuthPage() {
                       <Input 
                         id="first-name" 
                         placeholder="John"
-                        value={firstName}
-                        onChange={(e) => setFirstName(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        value={signupForm.data.firstName}
+                        onChange={(e) => signupForm.updateField('firstName', e.target.value)}
+                        disabled={signupForm.isSubmitting}
                       />
+                      <FieldError error={signupForm.errors.firstName} />
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="last-name">Last name</Label>
                       <Input 
                         id="last-name" 
                         placeholder="Doe"
-                        value={lastName}
-                        onChange={(e) => setLastName(e.target.value)}
-                        required
-                        disabled={isLoading}
+                        value={signupForm.data.lastName}
+                        onChange={(e) => signupForm.updateField('lastName', e.target.value)}
+                        disabled={signupForm.isSubmitting}
                       />
+                      <FieldError error={signupForm.errors.lastName} />
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -302,36 +347,36 @@ export default function AuthPage() {
                       id="signup-email"
                       placeholder="name@example.com"
                       type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      value={signupForm.data.email}
+                      onChange={(e) => signupForm.updateField('email', e.target.value)}
+                      disabled={signupForm.isSubmitting}
                     />
+                    <FieldError error={signupForm.errors.email} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="signup-password">Password</Label>
                     <Input 
                       id="signup-password" 
                       type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      value={signupForm.data.password}
+                      onChange={(e) => signupForm.updateField('password', e.target.value)}
+                      disabled={signupForm.isSubmitting}
                     />
+                    <FieldError error={signupForm.errors.password} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="confirm-password">Confirm password</Label>
                     <Input 
                       id="confirm-password" 
                       type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
+                      value={signupForm.data.confirmPassword}
+                      onChange={(e) => signupForm.updateField('confirmPassword', e.target.value)}
+                      disabled={signupForm.isSubmitting}
                     />
+                    <FieldError error={signupForm.errors.confirmPassword} />
                   </div>
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? 'Creating account...' : 'Create Account'}
+                  <Button className="w-full" type="submit" disabled={signupForm.isSubmitting || !signupForm.isValid}>
+                    {signupForm.isSubmitting ? 'Creating account...' : 'Create Account'}
                   </Button>
                 </form>
                 
