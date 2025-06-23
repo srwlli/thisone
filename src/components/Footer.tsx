@@ -18,7 +18,7 @@ export default function Footer() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
-              &copy; 2025 My App. All rights reserved.
+              &copy; 2025 Template. All rights reserved.
             </div>
             
             <nav className="flex gap-6 text-sm">

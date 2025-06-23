@@ -6,7 +6,7 @@ export default function AboutPage() {
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Hero Section */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">About My App</h1>
+        <h1 className="text-4xl font-bold mb-4">About Template</h1>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
           A modern application built with AI assistance, designed to be versatile and easy to adapt 
           for any real-world idea. Experience the future of rapid development.
@@ -90,7 +90,7 @@ export default function AboutPage() {
               <Button variant="outline">View Documentation</Button>
             </div>
             <div className="text-sm text-muted-foreground">
-              <p>hello@myapp.com | Available for consultation</p>
+              <p>hello@template.com | Available for consultation</p>
               <p>Transform this demo into your next big idea</p>
             </div>
           </CardContent>

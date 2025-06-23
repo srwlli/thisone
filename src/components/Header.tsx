@@ -55,7 +55,7 @@ export default function Header() {
             {/* Footer Section */}
             <div className="mt-auto p-6 border-t">
               <div className="text-sm text-muted-foreground">
-                <p className="font-medium">My App</p>
+                <p className="font-medium">Template</p>
                 <p>Version 1.0.0</p>
               </div>
             </div>
@@ -84,7 +84,7 @@ export default function Header() {
 
         {/* App Title */}
         <div className="flex-1 text-right">
-          <h1 className="text-2xl lg:text-xl font-bold">My App</h1>
+          <h1 className="text-2xl lg:text-xl font-bold">Template</h1>
         </div>
       </div>
     </header>

@@ -88,7 +88,7 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="font-medium">Email</p>
-                  <p className="text-sm text-muted-foreground">hello@myapp.com</p>
+                  <p className="text-sm text-muted-foreground">hello@template.com</p>
                   <p className="text-xs text-muted-foreground">We respond within 24 hours</p>
                 </div>
               </div>

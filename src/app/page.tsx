@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4">Welcome to My App</h1>
+        <h1 className="text-4xl font-bold mb-4">Welcome to Template</h1>
         <p className="text-xl text-muted-foreground">Discover amazing features and get started today</p>
       </div>
 
